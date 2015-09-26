@@ -1,5 +1,5 @@
 
-Dungeon Test mod by Eduardo Mezêncio
+EM Dungeon Generator mod by Eduardo Mezêncio
 
 -------------------------------------------------------------------------------
 

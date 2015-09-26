@@ -2,7 +2,7 @@
 -- Constants --
 ---------------
 
-local modname = "dungeontest"
+local modname = "em_dungeon_gen"
 
 local roomsize = 6
 halfrs = math.floor(roomsize / 2)
