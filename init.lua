@@ -233,7 +233,7 @@ minetest.register_on_generated(function(minp, maxp, blockseed)
 			-- Torches --
 			-------------
 
-			if chance(1,1) then -- 1, 8
+			if chance(1,8) then
 				local coord = {x = x + halfrs,
 					       y = y + roomsize - 1,
 					       z = z + halfrs}
