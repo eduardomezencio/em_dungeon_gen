@@ -5,7 +5,12 @@
 local modname = "em_dungeon_gen"
 
 local roomsize = 6
-halfrs = math.floor(roomsize / 2)
+local halfrs = math.floor(roomsize / 2)
+local wallarea = (roomsize + 1) * (roomsize - 1)
+
+local pit_floors_min, pit_floors_max = 4, 8
+local pit_layer_size = pit_floors_max * roomsize
+
 
 ----------------------
 -- Helper Functions --
@@ -141,13 +146,21 @@ minetest.register_on_generated(function(minp, maxp, blockseed)
 			        step = z_step
 			end
 
-
+			local wallnodes = 0
 			for yval = rect.b, rect.t do
 				local index = va:index(xval, yval, zval)
 				for x_or_z = rect.l, rect.r do
 					data[index] = c_wall()
+					wallnodes = wallnodes + 1
 					index = index + step
 				end
+			end
+			-- This will hopefully ensure that the random number
+			-- generator is always in the same "position" after
+			-- generating the wall
+			while wallnodes < wallarea do
+				math.random()
+				wallnodes = wallnodes + 1
 			end
 
 			-----------
@@ -213,14 +226,14 @@ minetest.register_on_generated(function(minp, maxp, blockseed)
 
 		else
 
-			place_stuff(x, y, z, true)
-			place_stuff(x, y, z, false)
+			place_stuff(x, y, z, true) -- along the x axis
+			place_stuff(x, y, z, false) -- along the z axix
 
 			-------------
 			-- Torches --
 			-------------
 
-			if chance(1,8) then
+			if chance(1,1) then -- 1, 8
 				local coord = {x = x + halfrs,
 					       y = y + roomsize - 1,
 					       z = z + halfrs}
@@ -232,6 +245,61 @@ minetest.register_on_generated(function(minp, maxp, blockseed)
 	end
 	end
 	end
+	
+	----------
+	-- Pits --
+	----------
+	
+	local block_depth = maxp.y - minp.y + 1
+	local pit_layers = math.ceil(block_depth / pit_layer_size) + 2
+	local first_pit_layer = minp.y - (minp.y % pit_layer_size) - pit_layer_size
+
+	local y = first_pit_layer	
+	for layer_count = 1, pit_layers do
+		
+		for z=minz, maxp.z, roomsize do
+		for x=minx, maxp.x, roomsize do
+
+			math.randomseed(x + y^2 + z^3)
+		
+			if chance(1, 128) then
+				
+				local start = math.random(1, pit_floors_max)
+				local size = math.random(pit_floors_min, pit_floors_max)
+
+				local yy = y + start * roomsize
+				for floor_count = 1, size do
+				
+					-- Remove torches
+					if va:contains(x + halfrs, yy - 1, z + halfrs) then
+						data[va:index(x + halfrs, yy - 1, z + halfrs)] = c_air
+					end
+					
+					if yy > maxp.y then break end
+					
+					if yy >= minp.y then
+					for zz = math.max(minp.z, z + 1), math.min(maxp.x, z + roomsize - 1) do
+						
+						local startx = math.max(minp.x, x + 1)
+						local index = va:index(startx, yy, zz)
+						for xx = startx, math.min(maxp.x, x + roomsize - 1) do
+						
+							data[index] = c_air
+							index = index + x_step
+						end
+					end
+					end
+					
+					yy = yy + roomsize
+				end
+			end
+		
+		end
+		end
+		
+		y = y + pit_layer_size
+	end	
+	
 
 	vm:set_data(data)
 	vm:set_lighting({day=0, night=0})
